@@ -17,6 +17,7 @@ import org.mule.runtime.api.meta.model.declaration.fluent.ExtensionDeclaration;
 import org.mule.runtime.api.meta.model.declaration.fluent.OperationDeclaration;
 import org.mule.runtime.api.meta.model.declaration.fluent.ParameterDeclaration;
 import org.mule.runtime.api.meta.model.declaration.fluent.ParameterDeclarer;
+import org.mule.runtime.api.meta.model.declaration.fluent.ParameterGroupDeclaration;
 import org.mule.runtime.api.meta.model.declaration.fluent.SourceDeclaration;
 import org.mule.runtime.api.meta.model.declaration.fluent.TypedDeclaration;
 import org.mule.runtime.core.internal.metadata.DefaultMetadataResolverFactory;
@@ -80,7 +81,7 @@ public class DynamicMetadataModelEnricher extends AbstractAnnotatedModelEnricher
         }
 
         @Override
-        public void onParameter(ParameterDeclaration declaration) {
+        protected void onParameter(ParameterGroupDeclaration parameterGroup, ParameterDeclaration declaration) {
           enrichParameter(declaration);
         }
       }.walk(describingContext.getExtensionDeclarer().getDeclaration());
@@ -139,7 +140,7 @@ public class DynamicMetadataModelEnricher extends AbstractAnnotatedModelEnricher
 
 
   private void addQueryModelProperties(OperationDeclaration declaration, Query query) {
-    ParameterDeclaration parameterDeclaration = declaration.getParameters()
+    ParameterDeclaration parameterDeclaration = declaration.getAllParameters()
         .stream()
         .filter(p -> p.getModelProperty(ImplementingParameterModelProperty.class).isPresent())
         .filter(p -> p.getModelProperty(ImplementingParameterModelProperty.class).get()
@@ -163,7 +164,7 @@ public class DynamicMetadataModelEnricher extends AbstractAnnotatedModelEnricher
   private void declareInputResolvers(ComponentDeclaration<?> declaration, MetadataScopeAdapter metadataScope) {
     if (metadataScope.hasInputResolvers()) {
       Set<String> dynamicParameters = metadataScope.getInputResolvers().keySet();
-      declaration.getParameters().stream()
+      declaration.getAllParameters().stream()
           .filter(p -> dynamicParameters.contains(p.getName()))
           .forEach(this::declareDynamicType);
     }
@@ -207,7 +208,7 @@ public class DynamicMetadataModelEnricher extends AbstractAnnotatedModelEnricher
   }
 
   private Optional<MetadataKeyIdModelProperty> getMetadataKeyModelProperty(ComponentDeclaration<? extends ComponentDeclaration> component) {
-    Optional<ParameterDeclaration> keyId = component.getParameters().stream()
+    Optional<ParameterDeclaration> keyId = component.getAllParameters().stream()
         .filter(p -> getAnnotatedElement(p).map(element -> element.isAnnotationPresent(MetadataKeyId.class)).orElse(false))
         .findFirst();
 

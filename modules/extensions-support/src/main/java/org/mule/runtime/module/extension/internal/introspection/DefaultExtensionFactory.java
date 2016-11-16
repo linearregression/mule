@@ -7,6 +7,7 @@
 package org.mule.runtime.module.extension.internal.introspection;
 
 import static java.lang.String.format;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang.StringUtils.EMPTY;
@@ -24,14 +25,18 @@ import org.mule.runtime.api.meta.model.config.ConfigurationModel;
 import org.mule.runtime.api.meta.model.connection.ConnectionProviderModel;
 import org.mule.runtime.api.meta.model.declaration.fluent.ConfigurationDeclaration;
 import org.mule.runtime.api.meta.model.declaration.fluent.ConnectionProviderDeclaration;
+import org.mule.runtime.api.meta.model.declaration.fluent.ExclusiveParametersDeclaration;
 import org.mule.runtime.api.meta.model.declaration.fluent.ExtensionDeclaration;
 import org.mule.runtime.api.meta.model.declaration.fluent.ExtensionDeclarer;
 import org.mule.runtime.api.meta.model.declaration.fluent.OperationDeclaration;
 import org.mule.runtime.api.meta.model.declaration.fluent.OutputDeclaration;
 import org.mule.runtime.api.meta.model.declaration.fluent.ParameterDeclaration;
+import org.mule.runtime.api.meta.model.declaration.fluent.ParameterGroupDeclaration;
 import org.mule.runtime.api.meta.model.declaration.fluent.ParameterizedDeclaration;
 import org.mule.runtime.api.meta.model.declaration.fluent.SourceDeclaration;
 import org.mule.runtime.api.meta.model.operation.OperationModel;
+import org.mule.runtime.api.meta.model.parameter.ExclusiveParametersModel;
+import org.mule.runtime.api.meta.model.parameter.ParameterGroupModel;
 import org.mule.runtime.api.meta.model.parameter.ParameterModel;
 import org.mule.runtime.api.meta.model.parameter.ParameterizedModel;
 import org.mule.runtime.api.meta.model.source.SourceModel;
@@ -39,6 +44,8 @@ import org.mule.runtime.api.exception.MuleRuntimeException;
 import org.mule.runtime.core.api.registry.ServiceRegistry;
 import org.mule.runtime.core.util.CollectionUtils;
 import org.mule.runtime.core.util.collection.ImmutableListCollector;
+import org.mule.runtime.extension.api.model.parameter.ImmutableExclusiveParametersModel;
+import org.mule.runtime.extension.api.model.parameter.ImmutableParameterGroupModel;
 import org.mule.runtime.extension.api.runtime.ExtensionFactory;
 import org.mule.runtime.extension.api.model.ImmutableExtensionModel;
 import org.mule.runtime.extension.api.model.ImmutableOutputModel;
@@ -199,7 +206,7 @@ public final class DefaultExtensionFactory implements ExtensionFactory {
       return fromCache(declaration,
                        () -> new ImmutableConfigurationModel(declaration.getName(),
                                                              declaration.getDescription(),
-                                                             toParameters(declaration.getParameters()),
+                                                             toParameterGroups(declaration.getParameterGroups()),
                                                              toOperations(declaration.getOperations()),
                                                              toConnectionProviders(declaration.getConnectionProviders()),
                                                              toMessageSources(declaration.getMessageSources()),
@@ -215,7 +222,7 @@ public final class DefaultExtensionFactory implements ExtensionFactory {
       return fromCache(declaration,
                        () -> new ImmutableSourceModel(declaration.getName(), declaration.getDescription(),
                                                       declaration.hasResponse(),
-                                                      toParameters(declaration.getParameters()),
+                                                      toParameterGroups(declaration.getParameterGroups()),
                                                       toOutputModel(declaration.getOutput()),
                                                       toOutputModel(declaration.getOutputAttributes()),
                                                       declaration.getDisplayModel(),
@@ -227,17 +234,15 @@ public final class DefaultExtensionFactory implements ExtensionFactory {
     }
 
     private OperationModel toOperation(OperationDeclaration declaration) {
-      return fromCache(declaration, () -> {
-        List<ParameterModel> parameterModels = toOperationParameters(declaration.getParameters());
-
-        return new ImmutableOperationModel(declaration.getName(),
+      return fromCache(declaration, () ->
+        new ImmutableOperationModel(declaration.getName(),
                                            declaration.getDescription(),
-                                           parameterModels,
+                                           toParameterGroups(declaration.getParameterGroups()),
                                            toOutputModel(declaration.getOutput()),
                                            toOutputModel(declaration.getOutputAttributes()),
                                            declaration.getDisplayModel(),
-                                           declaration.getModelProperties());
-      });
+                                           declaration.getModelProperties())
+      );
     }
 
     private List<ConnectionProviderModel> toConnectionProviders(List<ConnectionProviderDeclaration> declarations) {
@@ -255,14 +260,43 @@ public final class DefaultExtensionFactory implements ExtensionFactory {
       return fromCache(declaration,
                        () -> new ImmutableConnectionProviderModel(declaration.getName(),
                                                                   declaration.getDescription(),
-                                                                  toParameters(declaration.getParameters()),
+                                                                  toParameterGroups(declaration.getParameterGroups()),
                                                                   declaration.getConnectionManagementType(),
                                                                   declaration.getDisplayModel(),
                                                                   declaration.getModelProperties()));
     }
 
-    private List<ParameterModel> toOperationParameters(List<ParameterDeclaration> declarations) {
-      return toParameters(declarations);
+    private List<ParameterGroupModel> toParameterGroups(List<ParameterGroupDeclaration> declarations) {
+      if (declarations.isEmpty()) {
+        return ImmutableList.of();
+      }
+
+      return declarations.stream().map(this::toParameterGroup).collect(toList());
+    }
+
+    private ParameterGroupModel toParameterGroup(ParameterGroupDeclaration declaration) {
+      return new ImmutableParameterGroupModel(declaration.getName(),
+                                              declaration.getDescription(),
+                                              toParameters(declaration.getParameters()),
+                                              toExclusiveParametersModel(declaration),
+                                              declaration.getDisplayModel(),
+                                              declaration.getLayoutModel(),
+                                              declaration.getModelProperties());
+    }
+
+    private ExclusiveParametersModel toExclusiveParametersModel(ParameterGroupDeclaration groupDeclaration) {
+      final ExclusiveParametersDeclaration exclusiveParameters = groupDeclaration.getExclusiveParameters();
+      List<String> exclusiveParameterNames;
+      if (exclusiveParameters.isExclusiveOptionals()) {
+        exclusiveParameterNames = groupDeclaration.getParameters().stream()
+            .filter(p -> !p.isRequired())
+            .map(ParameterDeclaration::getName)
+            .collect(toList());
+      } else {
+        exclusiveParameterNames = emptyList();
+      }
+
+      return new ImmutableExclusiveParametersModel(exclusiveParameterNames, exclusiveParameters.isRequiresOne());
     }
 
     private List<ParameterModel> toParameters(List<ParameterDeclaration> declarations) {

@@ -9,7 +9,7 @@ package org.mule.extension.http.internal.request;
 import static java.lang.Integer.MAX_VALUE;
 import static org.mule.extension.http.internal.HttpConnector.OTHER_SETTINGS;
 import static org.mule.extension.http.internal.HttpConnector.CONFIGURATION_OVERRIDES;
-import static org.mule.runtime.extension.api.annotation.param.display.Placement.ADVANCED;
+import static org.mule.runtime.extension.api.annotation.param.display.Group.ADVANCED;
 import org.mule.extension.http.api.HttpMetadataKey;
 import org.mule.extension.http.api.HttpResponseAttributes;
 import org.mule.extension.http.api.HttpSendBodyMode;

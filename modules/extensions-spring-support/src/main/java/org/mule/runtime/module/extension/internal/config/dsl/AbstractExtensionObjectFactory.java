@@ -90,7 +90,7 @@ public abstract class AbstractExtensionObjectFactory<T> implements ObjectFactory
 
     ResolverSet resolverSet = new ResolverSet();
     Map<String, Object> parameters = getParameters();
-    model.getParameterModels().stream()
+    model.getAllParameterModels().stream()
         .filter(CompositePredicate.of(predicates))
         .forEach(p -> {
           String parameterName = getMemberName(p, p.getName());

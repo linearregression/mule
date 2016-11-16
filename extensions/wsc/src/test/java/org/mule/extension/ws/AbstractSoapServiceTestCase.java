@@ -11,10 +11,8 @@ import static org.junit.Assert.assertTrue;
 import static org.mule.extension.ws.WscTestUtils.HEADER_IN;
 import static org.mule.extension.ws.WscTestUtils.HEADER_INOUT;
 import static org.mule.extension.ws.WscTestUtils.getRequestResource;
-import static org.mule.extension.ws.WscTestUtils.getTestAttachment;
 import static org.mule.runtime.core.util.ClassUtils.withContextClassLoader;
-import org.mule.extension.ws.consumer.TestAttachments;
-import org.mule.extension.ws.consumer.TestService;
+import org.mule.extension.ws.consumer.SimpleService;
 import org.mule.functional.junit4.MuleArtifactFunctionalTestCase;
 import org.mule.runtime.api.exception.MuleException;
 import org.mule.runtime.api.message.Message;
@@ -32,29 +30,22 @@ public abstract class AbstractSoapServiceTestCase extends MuleArtifactFunctional
   @ClassRule
   public static DynamicPort servicePort = new DynamicPort("servicePort");
 
-  @ClassRule
-  public static DynamicPort attachmentPort = new DynamicPort("attachmentPort");
-
-  public static final String SERVICE_URL = "http://localhost:" + servicePort.getValue() + "/testService";
-  public static final String ATTACHMENT_SERVICE_URL = "http://localhost:" + attachmentPort.getValue() + "/testAttachments";
+  private static final String SERVICE_URL = "http://localhost:" + servicePort.getValue() + "/testService";
 
   private static Endpoint service;
-  private static Endpoint attachmentService;
 
   @BeforeClass
   public static void startService() throws MuleException {
     XMLUnit.setIgnoreWhitespace(true);
-    service = withContextClassLoader(ClassLoader.getSystemClassLoader(), () -> publish(SERVICE_URL, new TestService()));
-    attachmentService = withContextClassLoader(ClassLoader.getSystemClassLoader(),
-                                               () -> publish(ATTACHMENT_SERVICE_URL, new TestAttachments()));
+    service = withContextClassLoader(ClassLoader.getSystemClassLoader(), () -> publish(SERVICE_URL, new SimpleService()));
     assertTrue(service.isPublished());
-    assertTrue(attachmentService.isPublished());
   }
 
   @AfterClass
   public static void stopService() {
-    service.stop();
-    attachmentService.stop();
+    if (service != null) {
+      service.stop();
+    }
   }
 
   protected Message runFlowWithRequest(String flowName, String requestXmlResourceName) throws Exception {

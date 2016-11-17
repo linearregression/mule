@@ -6,10 +6,13 @@
  */
 package org.mule.test.petstore.extension;
 
+import static org.mule.runtime.api.error.Errors.CONNECTIVITY;
+
 import org.mule.runtime.api.tls.TlsContextFactory;
 import org.mule.runtime.core.api.config.ThreadingProfile;
 import org.mule.runtime.extension.api.annotation.Extension;
 import org.mule.runtime.extension.api.annotation.Operations;
+import org.mule.runtime.extension.api.annotation.error.ExceptionMapping;
 import org.mule.runtime.extension.api.annotation.param.Parameter;
 import org.mule.runtime.extension.api.annotation.param.ParameterGroup;
 import org.mule.runtime.extension.api.annotation.Sources;
@@ -25,6 +28,7 @@ import java.util.List;
     TransactionalPetStoreConnectionProvider.class})
 @Sources({PetStoreSource.class})
 @Xml(namespaceLocation = "http://www.mulesoft.org/schema/mule/petstore", namespace = "petstore")
+@ExceptionMapping(exceptionClass = Exception.class, errorType = CONNECTIVITY)
 public class PetStoreConnector {
 
   @Parameter

@@ -49,9 +49,26 @@ public class ExceptionMapper {
    * @return optional created with the found error type, if any, or an empty optional.
    */
   public Optional<ErrorType> resolveErrorType(Throwable exception) {
+    return resolveErrorType(exception.getClass());
+  }
+
+  /**
+   * Using the set of {@link ExceptionMapping}s which this instance was configured with, it resolves the {@link ErrorType}
+   * associated with the exception.
+   *
+   * Resolution is done based on the different mappings taking into account most specific error types first and then the more
+   * general ones.
+   *
+   * If no error type can be find then {@link Optional#empty()} will be returned.
+   *
+   * @param exceptionType the exception used to resolve the error type.
+   * @return optional created with the found error type, if any, or an empty optional.
+   */
+  public Optional<ErrorType> resolveErrorType(Class<? extends Throwable> exceptionType) {
     return exceptionMappings.stream()
-        .filter(exceptionMapping -> exceptionMapping.matches(exception))
-        .findFirst().map(matchingExceptionMapping -> matchingExceptionMapping.getErrorType());
+        .filter(exceptionMapping -> exceptionMapping.matches(exceptionType))
+        .findFirst()
+        .map(ExceptionMapping::getErrorType);
   }
 
   /**

@@ -15,6 +15,7 @@ import org.mule.runtime.dsl.api.component.ComponentIdentifier;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Repository for the different {@link ErrorType}s in a mule artifact.
@@ -56,6 +57,10 @@ public class ErrorTypeRepository {
       throw new IllegalStateException(format("there's no error type for %s", errorTypeComponentIdentifier));
     }
     return errorType;
+  }
+
+  public Optional<ErrorType> lookupOptErrorType(ComponentIdentifier errorTypeComponentIdentifier) {
+    return Optional.ofNullable(this.errorTypes.get(errorTypeComponentIdentifier));
   }
 
   /**

@@ -8,6 +8,8 @@ package org.mule.test.heisenberg.extension;
 
 import static java.util.stream.Collectors.toList;
 import static org.mule.runtime.extension.api.annotation.param.Optional.PAYLOAD;
+
+import org.mule.runtime.api.exception.MuleException;
 import org.mule.runtime.api.message.Message;
 import org.mule.runtime.api.metadata.DataType;
 import org.mule.runtime.core.api.Event;
@@ -42,6 +44,7 @@ import org.mule.test.heisenberg.extension.model.SaleInfo;
 import org.mule.test.heisenberg.extension.model.Weapon;
 import org.mule.test.heisenberg.extension.model.types.WeaponType;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.Charset;
 import java.util.List;
@@ -77,7 +80,8 @@ public class HeisenbergOperations {
 
   @DataTypeParameters
   public Result<String, IntegerAttributes> getEnemy(@UseConfig HeisenbergExtension config,
-                                                    @Optional(defaultValue = "0") int index) {
+                                                    @Optional(defaultValue = "0") int index)
+      throws IOException, HeisenbergException {
     Charset lastSupportedEncoding = Charset.availableCharsets().values().stream().reduce((first, last) -> last).get();
     org.mule.runtime.api.metadata.DataType dt =
         DataType.builder().type(String.class).mediaType("dead/dead").charset(lastSupportedEncoding.toString()).build();

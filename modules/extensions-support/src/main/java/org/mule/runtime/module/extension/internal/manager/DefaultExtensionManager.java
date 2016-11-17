@@ -13,6 +13,7 @@ import static org.mule.runtime.api.i18n.I18nMessageFactory.createStaticMessage;
 import static org.mule.runtime.core.util.ClassUtils.withContextClassLoader;
 import static org.mule.runtime.api.util.Preconditions.checkArgument;
 import static org.mule.runtime.module.extension.internal.manager.DefaultConfigurationExpirationMonitor.Builder.newBuilder;
+
 import org.mule.runtime.api.meta.model.ExtensionModel;
 import org.mule.runtime.core.api.Event;
 import org.mule.runtime.core.api.MuleContext;
@@ -77,11 +78,13 @@ public final class DefaultExtensionManager
   private ExtensionRegistry extensionRegistry;
   private ExtensionFactory extensionFactory;
   private ConfigurationExpirationMonitor configurationExpirationMonitor;
+  private ExtensionErrorsRegistrant extensionErrorsRegistrant;
 
   @Override
   public void initialise() throws InitialisationException {
     extensionRegistry = new ExtensionRegistry(muleContext.getRegistry());
     extensionFactory = new DefaultExtensionFactory(serviceRegistry, muleContext.getExecutionClassLoader());
+    extensionErrorsRegistrant = new ExtensionErrorsRegistrant(muleContext.getErrorTypeRepository(), muleContext.getErrorTypeLocator());
   }
 
   /**
@@ -123,6 +126,7 @@ public final class DefaultExtensionManager
       }
     } else {
       extensionRegistry.registerExtension(extensionName, extensionModel);
+      extensionErrorsRegistrant.registerErrors(extensionModel);
     }
   }
 

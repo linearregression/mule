@@ -180,18 +180,15 @@ public class ExceptionUtils extends org.apache.commons.lang.exception.ExceptionU
   public static ErrorType getErrorTypeFromFailingProcessor(Processor messageProcessor, Throwable exception,
                                                            MuleContext muleContext) {
     ErrorType errorType;
-    Throwable causeException =
-        exception instanceof WrapperErrorMessageAwareException ? ((WrapperErrorMessageAwareException) exception).getRootCause()
-            : exception;
+    Throwable causeException = exception instanceof WrapperErrorMessageAwareException ? ((WrapperErrorMessageAwareException) exception).getRootCause() : exception;
     ComponentIdentifier componentIdentifier = null;
     if (AnnotatedObject.class.isAssignableFrom(messageProcessor.getClass())) {
-      componentIdentifier =
-          (ComponentIdentifier) ((AnnotatedObject) messageProcessor).getAnnotation(ComponentIdentifier.ANNOTATION_NAME);
+      componentIdentifier = (ComponentIdentifier) ((AnnotatedObject) messageProcessor).getAnnotation(ComponentIdentifier.ANNOTATION_NAME);
     }
     if (componentIdentifier != null) {
-      errorType = muleContext.getErrorTypeLocator().lookupComponentErrorType(componentIdentifier, causeException);
+      errorType = muleContext.getErrorTypeLocator().lookupComponentErrorType(componentIdentifier, causeException.getClass());
     } else {
-      errorType = muleContext.getErrorTypeLocator().lookupErrorType(causeException);
+      errorType = muleContext.getErrorTypeLocator().lookupErrorType(causeException.getClass());
     }
     return errorType;
   }

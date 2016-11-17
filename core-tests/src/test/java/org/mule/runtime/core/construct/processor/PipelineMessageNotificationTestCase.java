@@ -92,7 +92,7 @@ public class PipelineMessageNotificationTestCase extends AbstractReactiveProcess
     ErrorTypeLocator errorTypeLocator = mock(ErrorTypeLocator.class);
     ErrorType errorType = mock(ErrorType.class);
     when(errorTypeLocator.lookupErrorType(any(Throwable.class))).thenReturn(errorType);
-    when(errorTypeLocator.<String, Throwable>lookupComponentErrorType(any(ComponentIdentifier.class), any(Throwable.class)))
+    when(errorTypeLocator.<String, Throwable>lookupComponentErrorType(any(ComponentIdentifier.class), any(Class.class)))
         .thenReturn(errorType);
     when(muleContext.getErrorTypeLocator()).thenReturn(errorTypeLocator);
     pipeline = new TestPipeline(pipelineName, muleContext);

@@ -50,7 +50,11 @@ public class ErrorTypeLocator {
    *         returned.
    */
   public ErrorType lookupErrorType(Throwable exception) {
-    return defaultExceptionMapper.resolveErrorType(exception).get();
+    return lookupErrorType(exception.getClass());
+  }
+
+  public ErrorType lookupErrorType(Class<? extends Throwable> exceptionType) {
+    return defaultExceptionMapper.resolveErrorType(exceptionType).get();
   }
 
   /**
@@ -64,13 +68,23 @@ public class ErrorTypeLocator {
    * @return the error type related to the exception based on the component mappings. If there's no mapping then the error type
    *         related to UNKNOWN will be returned.
    */
-  public ErrorType lookupComponentErrorType(ComponentIdentifier componentIdentifier, Throwable exception) {
+  public ErrorType lookupComponentErrorType(ComponentIdentifier componentIdentifier, Class<? extends Throwable> exception) {
     ExceptionMapper exceptionMapper = componentExceptionMappers.get(componentIdentifier);
     Optional<ErrorType> errorType = empty();
     if (exceptionMapper != null) {
       errorType = exceptionMapper.resolveErrorType(exception);
     }
     return errorType.orElseGet(() -> defaultExceptionMapper.resolveErrorType(exception).get());
+  }
+
+  /**
+   * Adds an {@link ExceptionMapper} for a particular component identified by a {@link ComponentIdentifier}.
+   *
+   * @param componentIdentifier identifier of a component.
+   * @param exceptionMapper exception mapper for the component.
+   */
+  public void addComponentExceptionMapper(ComponentIdentifier componentIdentifier, ExceptionMapper exceptionMapper) {
+    this.componentExceptionMappers.put(componentIdentifier, exceptionMapper);
   }
 
   /**

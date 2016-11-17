@@ -166,11 +166,6 @@ public class MuleArtifactContext extends AbstractXmlApplicationContext {
               .forEach(componentBuildingDefinitionRegistry::register);
         });
 
-    ErrorTypeRepository errorTypeRepository = createDefaultErrorTypeRepository();
-    ErrorTypeLocator errorTypeLocator = createComponentErrorTypeLocator(errorTypeRepository);
-    ((DefaultMuleContext) muleContext).setErrorTypeLocator(errorTypeLocator);
-    ((DefaultMuleContext) muleContext).setErrorTypeRepository(errorTypeRepository);
-
     xmlApplicationParser = new XmlApplicationParser(new XmlServiceRegistry(serviceRegistry, muleContext));
 
     this.beanDefinitionFactory = new BeanDefinitionFactory(componentBuildingDefinitionRegistry);

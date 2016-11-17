@@ -20,6 +20,8 @@ import static org.mule.runtime.module.extension.internal.util.MuleExtensionUtils
 import static org.mule.runtime.module.extension.internal.util.MuleExtensionUtils.getInitialiserEvent;
 import static org.mule.runtime.module.extension.internal.util.MuleExtensionUtils.getOperationExecutorFactory;
 import static org.slf4j.LoggerFactory.getLogger;
+
+import org.mule.runtime.api.meta.AnnotatedObject;
 import org.mule.runtime.api.meta.model.ExtensionModel;
 import org.mule.runtime.api.meta.model.config.ConfigurationModel;
 import org.mule.runtime.api.meta.model.operation.OperationModel;
@@ -37,6 +39,7 @@ import org.mule.runtime.api.lifecycle.InitialisationException;
 import org.mule.runtime.api.lifecycle.Lifecycle;
 import org.mule.runtime.core.api.processor.Processor;
 import org.mule.runtime.core.exception.MessagingException;
+import org.mule.runtime.dsl.api.component.ComponentIdentifier;
 import org.mule.runtime.extension.api.runtime.ConfigurationInstance;
 import org.mule.runtime.extension.api.runtime.ConfigurationProvider;
 import org.mule.runtime.extension.api.runtime.operation.OperationExecutor;
@@ -53,9 +56,13 @@ import org.mule.runtime.module.extension.internal.runtime.LazyExecutionContext;
 import org.mule.runtime.module.extension.internal.runtime.ParameterValueResolver;
 import org.mule.runtime.module.extension.internal.runtime.resolver.ResolverSet;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 import org.slf4j.Logger;
+
+import javax.xml.namespace.QName;
 
 /**
  * A {@link Processor} capable of executing extension operations.
@@ -75,7 +82,7 @@ import org.slf4j.Logger;
  *
  * @since 3.7.0
  */
-public class OperationMessageProcessor extends ExtensionComponent implements Processor, EntityMetadataProvider, Lifecycle {
+public class OperationMessageProcessor extends ExtensionComponent implements Processor, EntityMetadataProvider, Lifecycle, AnnotatedObject {
 
   private static final Logger LOGGER = getLogger(OperationMessageProcessor.class);
   static final String INVALID_TARGET_MESSAGE =
@@ -86,6 +93,7 @@ public class OperationMessageProcessor extends ExtensionComponent implements Pro
   private final ResolverSet resolverSet;
   private final String target;
   private final EntityMetadataMediator entityMetadataMediator;
+  private final Map<QName, Object> annotations = new HashMap<>();
 
   private ExecutionMediator executionMediator;
   private OperationExecutor operationExecutor;
@@ -103,6 +111,7 @@ public class OperationMessageProcessor extends ExtensionComponent implements Pro
     this.resolverSet = resolverSet;
     this.target = target;
     this.entityMetadataMediator = new EntityMetadataMediator(operationModel);
+    annotations.put(ComponentIdentifier.ANNOTATION_NAME, new ComponentIdentifier.Builder().withNamespace(extensionModel.getXmlDslModel().getNamespace()).withName(operationModel.getName()).build());
   }
 
   @Override
@@ -233,5 +242,20 @@ public class OperationMessageProcessor extends ExtensionComponent implements Pro
   protected ParameterValueResolver getParameterValueResolver() {
     final Event event = getInitialiserEvent(muleContext);
     return new OperationParameterValueResolver(new LazyExecutionContext<>(resolverSet, operationModel, extensionModel, event));
+  }
+
+  @Override
+  public Object getAnnotation(QName name) {
+    return annotations.get(name);
+  }
+
+  @Override
+  public Map<QName, Object> getAnnotations() {
+    return null;
+  }
+
+  @Override
+  public void setAnnotations(Map<QName, Object> annotations) {
+
   }
 }

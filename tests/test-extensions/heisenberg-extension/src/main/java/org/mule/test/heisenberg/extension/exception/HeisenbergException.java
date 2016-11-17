@@ -6,6 +6,9 @@
  */
 package org.mule.test.heisenberg.extension.exception;
 
+import org.mule.runtime.extension.api.annotation.error.ErrorType;
+
+@ErrorType(value = "", parent = "")
 public class HeisenbergException extends Exception {
 
   public HeisenbergException(String message) {

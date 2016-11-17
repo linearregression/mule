@@ -32,7 +32,7 @@ public class InOnlyTestCase extends AbstractIntegrationTestCase {
     final Latch latch = new Latch();
     muleContext.registerListener((FunctionalTestNotificationListener) notification -> latch.countDown());
 
-    flowRunner("In-Only-Service").withPayload(TEST_PAYLOAD).asynchronously().run();
+    flowRunner("In-Only-Service").withPayload(TEST_PAYLOAD).dispatch();
     assertTrue(latch.await(TIMEOUT, TimeUnit.MILLISECONDS));
   }
 }

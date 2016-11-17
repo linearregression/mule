@@ -117,33 +117,47 @@ public class FlowRunner extends FlowConstructRunner<FlowRunner> {
    */
   public Event runAndVerify(String... flowNamesToVerify) throws Exception {
     Flow flow = (Flow) getFlowConstruct();
-    Event request = getOrBuildEvent();
-    Event response = request;
-    ExecutionCallback callback = () -> {
+    Event response = txExecutionTemplate.execute(() -> {
       if (nonBlocking) {
-        return processAsStreamAndBlock(request, flow);
+        return processAsStreamAndBlock(getOrBuildEvent(), flow);
       } else {
-        return flow.process(request);
+        return flow.process(getOrBuildEvent());
       }
-    };
-
-    if (asynchronously) {
-      asyncScheduler.execute(() -> {
-        try {
-          txExecutionTemplate.execute(callback);
-        } catch (Exception e) {
-          // Ignore
-        }
-      });
-    } else {
-      response = txExecutionTemplate.execute(callback);
-    }
+    });
 
     for (String flowNameToVerify : flowNamesToVerify) {
       FlowAssert.verify(flowNameToVerify);
     }
 
     return (Event) responseEventTransformer.transform(response);
+  }
+
+  /**
+   * Dispatchs to the specified flow with the provided event and configuration, and performs a {@link FlowAssert#verify(String))}
+   * afterwards.
+   *
+   * If this is called multiple times, the <b>same</b> event will be sent. To force the creation of a new event, use
+   * {@link #reset()}.
+   *
+   * Dispatch behaves differently to {@link FlowRunner#run()} in that it does execute the flow in a seperate thread and does not
+   * propagate any exceptions to the test case or return a result.
+   *
+   */
+  public void dispatch() {
+    Flow flow = (Flow) getFlowConstruct();
+    asyncScheduler.execute(() -> {
+      try {
+        txExecutionTemplate.execute(() -> {
+          if (nonBlocking) {
+            return processAsStreamAndBlock(getOrBuildEvent(), flow);
+          } else {
+            return flow.process(getOrBuildEvent());
+          }
+        });
+      } catch (Exception e) {
+        // Ignore
+      }
+    });
   }
 
   /**

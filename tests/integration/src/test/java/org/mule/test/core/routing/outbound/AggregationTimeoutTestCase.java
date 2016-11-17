@@ -42,7 +42,7 @@ public class AggregationTimeoutTestCase extends AbstractIntegrationTestCase {
 
     try {
       MuleClient client = muleContext.getClient();
-      flowRunner("main").withPayload(inputData).asynchronously().run();
+      flowRunner("main").withPayload(inputData).dispatch();
 
       InternalMessage response = client.request("test://testOut", RECEIVE_TIMEOUT).getRight().get();
       assertThat(response.getPayload().getValue(), instanceOf(List.class));

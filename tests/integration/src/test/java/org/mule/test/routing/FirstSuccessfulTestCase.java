@@ -57,7 +57,7 @@ public class FirstSuccessfulTestCase extends AbstractIntegrationTestCase {
 
   @Test
   public void testFirstSuccessfulWithOneWayEndpoints() throws Exception {
-    flowRunner("test-router4").withPayload(TEST_MESSAGE).asynchronously().run();
+    flowRunner("test-router4").withPayload(TEST_MESSAGE).dispatch();
 
     MuleClient client = muleContext.getClient();
     InternalMessage response = client.request("test://output4.out", RECEIVE_TIMEOUT).getRight().get();

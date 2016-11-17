@@ -50,7 +50,7 @@ public class Mule4412TestCase extends AbstractIntegrationTestCase {
   @Test
   public void testFilterOnce() throws Exception {
     MuleClient client = muleContext.getClient();
-    flowRunner("AsyncRequest").withPayload(TEST_MESSAGE).withInboundProperty("pass", "true").asynchronously().run();
+    flowRunner("AsyncRequest").withPayload(TEST_MESSAGE).withInboundProperty("pass", "true").dispatch();
 
     InternalMessage reply = client.request("test://asyncResponse", RECEIVE_TIMEOUT).getRight().get();
     int times = FilterCounter.counter.get();
@@ -71,7 +71,7 @@ public class Mule4412TestCase extends AbstractIntegrationTestCase {
   @Test
   public void testWrongPropertyKey() throws Exception {
     MuleClient client = muleContext.getClient();
-    flowRunner("AsyncRequest").withPayload(TEST_MESSAGE).withInboundProperty("fail", "true").asynchronously().run();
+    flowRunner("AsyncRequest").withPayload(TEST_MESSAGE).withInboundProperty("fail", "true").dispatch();
     assertThat(client.request("test://asyncResponse", RECEIVE_TIMEOUT).getRight().isPresent(), is(false));
     assertThat("should not have filtered", FilterCounter.counter.get(), is(0));
   }
@@ -84,7 +84,7 @@ public class Mule4412TestCase extends AbstractIntegrationTestCase {
   @Test
   public void testWrongPropertyValue() throws Exception {
     MuleClient client = muleContext.getClient();
-    flowRunner("AsyncRequest").withPayload(TEST_MESSAGE).withInboundProperty("pass", "false").asynchronously().run();
+    flowRunner("AsyncRequest").withPayload(TEST_MESSAGE).withInboundProperty("pass", "false").dispatch();
 
     assertThat(client.request("test://asyncResponse", RECEIVE_TIMEOUT).getRight().isPresent(), is(false));
     assertThat("should not have filtered", FilterCounter.counter.get(), is(0));
@@ -98,7 +98,7 @@ public class Mule4412TestCase extends AbstractIntegrationTestCase {
   @Test
   public void testNoProperty() throws Exception {
     MuleClient client = muleContext.getClient();
-    flowRunner("AsyncRequest").withPayload(TEST_MESSAGE).asynchronously().run();
+    flowRunner("AsyncRequest").withPayload(TEST_MESSAGE).dispatch();
     assertThat(client.request("test://asyncResponse", RECEIVE_TIMEOUT).getRight().isPresent(), is(false));
     assertThat("should not have filtered", FilterCounter.counter.get(), is(0));
   }

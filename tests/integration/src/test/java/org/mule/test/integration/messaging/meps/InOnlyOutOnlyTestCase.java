@@ -27,10 +27,10 @@ public class InOnlyOutOnlyTestCase extends AbstractIntegrationTestCase {
   public void testExchange() throws Exception {
     MuleClient client = muleContext.getClient();
 
-    FlowRunner baseRunner = flowRunner("In-Only_Out-Only-Service").withPayload("some data").asynchronously();
+    FlowRunner baseRunner = flowRunner("In-Only_Out-Only-Service").withPayload("some data");
     baseRunner.run();
     baseRunner.reset();
-    baseRunner.withInboundProperty("foo", "bar").run();
+    baseRunner.withInboundProperty("foo", "bar").dispatch();
 
     InternalMessage result = client.request("test://received", RECEIVE_TIMEOUT).getRight().get();
     assertNotNull(result);

@@ -48,8 +48,7 @@ public class PGPSecurityFilterTestCase extends FunctionalTestCase {
 
     flowRunner("echo")
         .withPayload(eventBuilder().message(InternalMessage.builder().payload(new String(msg)).inboundProperties(props).build())
-            .build())
-        .asynchronously().run();
+            .build()).dispatch();
 
     InternalMessage message = client.request("test://output", RECEIVE_TIMEOUT).getRight().get();
     assertEquals("This is a test message.\r\nThis is another line.\r\n", getPayloadAsString(message));

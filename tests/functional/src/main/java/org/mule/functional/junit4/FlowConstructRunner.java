@@ -35,7 +35,6 @@ public abstract class FlowConstructRunner<R extends FlowConstructRunner> {
   protected MuleContext muleContext;
   protected TestEventBuilder eventBuilder = new TestEventBuilder();
   private Event requestEvent;
-  protected boolean asynchronously;
 
   /**
    * Prepares the given data to be sent as the payload of the {@link Event} to the configured flow.
@@ -217,22 +216,7 @@ public abstract class FlowConstructRunner<R extends FlowConstructRunner> {
   }
 
   /**
-   * Configures this runner to exectue the flow asynchronously so that the result or any exceptions are not propagated back to
-   * the test case.
-   *
-   * @return this {@link FlowRunner}
-   * @deprecated MULE-10445 Mule 4 - New Threading model
-   */
-  @Deprecated
-  public R asynchronously() {
-    this.asynchronously = true;
-
-    return (R) this;
-  }
-
-  /**
-   * Configures this runner to run this flow as using the provided {@link MessageExchangePattern}. This is useful if the exchange
-   * pattern needs to be paramatized, otherwise {@link #asynchronously()} can be used.
+   * Configures this runner to run this flow as using the provided {@link MessageExchangePattern}.
    *
    * @return this {@link FlowRunner}
    * @deprecated MULE-10445 Mule 4 - New Threading model
@@ -243,7 +227,6 @@ public abstract class FlowConstructRunner<R extends FlowConstructRunner> {
 
     return (R) this;
   }
-
 
   /**
    * Will spy the built {@link Message} and {@link Event}. See {@link Mockito#spy(Object) spy}.

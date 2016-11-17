@@ -19,7 +19,7 @@ public class InterceptorFlowTestCase extends AbstractIntegrationTestCase {
 
   @Test
   public void testDefaultJavaComponentShortcut() throws Exception {
-    flowRunner("interceptorFlow").withPayload(TEST_PAYLOAD).asynchronously().run();
+    flowRunner("interceptorFlow").withPayload(TEST_PAYLOAD).dispatch();
     MuleClient client = muleContext.getClient();
     InternalMessage message = client.request("test://out", 3000).getRight().get();
     assertNotNull(message);

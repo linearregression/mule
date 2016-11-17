@@ -10,9 +10,6 @@ import static java.util.stream.Collectors.toMap;
 import static org.mule.metadata.internal.utils.MetadataTypeUtils.isEnum;
 import static org.mule.runtime.module.extension.internal.util.IntrospectionUtils.getAnnotatedElement;
 import static org.mule.runtime.module.extension.internal.util.IntrospectionUtils.getAnnotation;
-
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 import org.mule.metadata.api.ClassTypeLoader;
 import org.mule.metadata.api.annotation.EnumAnnotation;
 import org.mule.metadata.api.model.BooleanType;
@@ -41,6 +38,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+
 /**
  * Adapter implementation which expands the {@link MetadataScope} to a more descriptive of the developer's metadata declaration
  * for a {@link ComponentModel component}
@@ -60,7 +60,7 @@ public final class MetadataScopeAdapter {
     OutputResolver outputResolverDeclaration = operation.getAnnotation(OutputResolver.class);
     Optional<Pair<MetadataKeyId, MetadataType>> keyId = locateMetadataKeyId(declaration);
 
-    inputResolvers = declaration.getParameters().stream()
+    inputResolvers = declaration.getAllParameters().stream()
         .filter(p -> getAnnotatedElement(p).map(e -> e.isAnnotationPresent(TypeResolver.class)).orElse(false))
         .collect(toMap(NamedDeclaration::getName,
                        p -> ResolverSupplier.of(getAnnotatedElement(p).get().getAnnotation(TypeResolver.class)
@@ -99,7 +99,7 @@ public final class MetadataScopeAdapter {
   }
 
   private Optional<Pair<MetadataKeyId, MetadataType>> locateMetadataKeyId(ComponentDeclaration<? extends ComponentDeclaration> component) {
-    Optional<Pair<MetadataKeyId, MetadataType>> keyId = component.getParameters().stream()
+    Optional<Pair<MetadataKeyId, MetadataType>> keyId = component.getAllParameters().stream()
         .map((declaration) -> new ImmutablePair<>(declaration, getAnnotatedElement(declaration)))
         .filter(p -> p.getRight().isPresent() && p.getRight().get().isAnnotationPresent(MetadataKeyId.class))
         .map(p -> (Pair<MetadataKeyId, MetadataType>) new ImmutablePair<>(p.getRight().get().getAnnotation(MetadataKeyId.class),

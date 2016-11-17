@@ -7,6 +7,9 @@
 package org.mule.runtime.module.extension.internal.introspection.describer;
 
 import static java.lang.String.format;
+import static java.util.Optional.empty;
+import static java.util.Optional.ofNullable;
+import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang.StringUtils.EMPTY;
 import static org.mule.runtime.api.meta.ExpressionSupport.NOT_SUPPORTED;
@@ -44,6 +47,7 @@ import org.mule.runtime.api.meta.model.declaration.fluent.HasOperationDeclarer;
 import org.mule.runtime.api.meta.model.declaration.fluent.HasSourceDeclarer;
 import org.mule.runtime.api.meta.model.declaration.fluent.OperationDeclarer;
 import org.mule.runtime.api.meta.model.declaration.fluent.ParameterDeclarer;
+import org.mule.runtime.api.meta.model.declaration.fluent.ParameterGroupDeclarer;
 import org.mule.runtime.api.meta.model.declaration.fluent.ParameterizedDeclarer;
 import org.mule.runtime.api.meta.model.declaration.fluent.SourceDeclarer;
 import org.mule.runtime.api.meta.model.display.LayoutModel;
@@ -133,6 +137,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
+
 
 /**
  * Implementation of {@link Describer} which generates a {@link ExtensionDeclarer} by scanning annotations on a type provided in
@@ -247,11 +252,11 @@ public final class AnnotationsBasedDescriber implements Describer {
     }
 
     configurationDeclarer.withModelProperty(
-                                            new ConfigurationFactoryModelProperty(new TypeAwareConfigurationFactory(configurationType
-                                                .getDeclaringClass(),
-                                                                                                                    extensionType
-                                                                                                                        .getDeclaringClass()
-                                                                                                                        .getClassLoader())))
+        new ConfigurationFactoryModelProperty(new TypeAwareConfigurationFactory(configurationType
+                                                                                    .getDeclaringClass(),
+                                                                                extensionType
+                                                                                    .getDeclaringClass()
+                                                                                    .getClassLoader())))
         .withModelProperty(new ImplementingTypeModelProperty(configurationType.getDeclaringClass()));
 
     declareFieldBasedParameters(configurationDeclarer, configurationType.getParameters(),
@@ -279,9 +284,9 @@ public final class AnnotationsBasedDescriber implements Describer {
 
     if (isInvalidConfigSupport(supportsConfig, configParameter, connectionParameter)) {
       throw new IllegalSourceModelDefinitionException(
-                                                      format("Source '%s' is defined at the extension level but it requires a config parameter. "
-                                                          + "Remove such parameter or move the source to the proper config",
-                                                             sourceType.getName()));
+          format("Source '%s' is defined at the extension level but it requires a config parameter. "
+                     + "Remove such parameter or move the source to the proper config",
+                 sourceType.getName()));
     }
 
     HasSourceDeclarer actualDeclarer =
@@ -300,7 +305,7 @@ public final class AnnotationsBasedDescriber implements Describer {
     if (sourceGenerics.size() != 2) {
       // TODO: MULE-9220: Add a syntax validator for this
       throw new IllegalModelDefinitionException(format("Message source class '%s' was expected to have 2 generic types "
-          + "(one for the Payload type and another for the Attributes type) but %d were found",
+                                                           + "(one for the Payload type and another for the Attributes type) but %d were found",
                                                        sourceType.getName(),
                                                        sourceGenerics.size()));
     }
@@ -326,7 +331,7 @@ public final class AnnotationsBasedDescriber implements Describer {
   private void declareSourceParameters(SourceElement sourceType, SourceDeclarer source) {
     declareFieldBasedParameters(source, sourceType.getParameters(),
                                 new ParameterDeclarationContext(SOURCE, source.getDeclaration()))
-                                    .forEach(p -> p.withExpressionSupport(NOT_SUPPORTED));
+        .forEach(p -> p.withExpressionSupport(NOT_SUPPORTED));
   }
 
   private void declareSourceCallback(SourceElement sourceType, SourceDeclarer source) {
@@ -343,11 +348,11 @@ public final class AnnotationsBasedDescriber implements Describer {
   private void declareSourceCallbackParameters(SourceDeclarer source, Optional<MethodElement> sourceCallback,
                                                CallbackPhase callbackPhase) {
     sourceCallback.ifPresent(method -> declareMethodBasedParameters(
-                                                                    source, method.getParameters(),
-                                                                    new ParameterDeclarationContext(SOURCE,
-                                                                                                    source.getDeclaration()))
-                                                                                                        .forEach(p -> p
-                                                                                                            .withModelProperty(new CallbackParameterModelProperty(callbackPhase))));
+        source, method.getParameters(),
+        new ParameterDeclarationContext(SOURCE,
+                                        source.getDeclaration()))
+        .forEach(p -> p
+            .withModelProperty(new CallbackParameterModelProperty(callbackPhase))));
   }
 
   private Optional<Method> getMethod(Optional<MethodElement> method) {
@@ -384,9 +389,9 @@ public final class AnnotationsBasedDescriber implements Describer {
 
       if (isInvalidConfigSupport(supportsConfig, configParameter, connectionParameter)) {
         throw new IllegalOperationModelDefinitionException(format(
-                                                                  "Operation '%s' is defined at the extension level but it requires a config. "
-                                                                      + "Remove such parameter or move the operation to the proper config",
-                                                                  method.getName()));
+            "Operation '%s' is defined at the extension level but it requires a config. "
+                + "Remove such parameter or move the operation to the proper config",
+            method.getName()));
       }
 
       HasOperationDeclarer actualDeclarer =
@@ -465,9 +470,9 @@ public final class AnnotationsBasedDescriber implements Describer {
     if (providerGenerics.size() != 1) {
       // TODO: MULE-9220: Add a syntax validator for this
       throw new IllegalConnectionProviderModelDefinitionException(
-                                                                  format("Connection provider class '%s' was expected to have 1 generic type "
-                                                                      + "(for the connection type) but %d were found",
-                                                                         providerType.getName(), providerGenerics.size()));
+          format("Connection provider class '%s' was expected to have 1 generic type "
+                     + "(for the connection type) but %d were found",
+                 providerType.getName(), providerGenerics.size()));
     }
 
     providerDeclarer = declarer.withConnectionProvider(name).describedAs(description)
@@ -494,78 +499,101 @@ public final class AnnotationsBasedDescriber implements Describer {
   private List<ParameterDeclarer> declareFieldBasedParameters(ParameterizedDeclarer component,
                                                               List<ExtensionParameter> parameters,
                                                               ParameterDeclarationContext componentName) {
-    return declareParameters(component, parameters, fieldParameterContributors, componentName, null);
+    return declareParameters(component, parameters, fieldParameterContributors, componentName, empty());
   }
 
   private List<ParameterDeclarer> declareMethodBasedParameters(ParameterizedDeclarer component,
                                                                List<ExtensionParameter> parameters,
                                                                ParameterDeclarationContext componentName) {
-    return declareParameters(component, parameters, methodParameterContributors, componentName, null);
+    return declareParameters(component, parameters, methodParameterContributors, componentName, empty());
   }
 
-  private List<ParameterDeclarer> declareParameters(ParameterizedDeclarer component, List<ExtensionParameter> parameters,
+  private List<ParameterDeclarer> declareParameters(ParameterizedDeclarer component,
+                                                    List<ExtensionParameter> parameters,
                                                     List<ParameterDeclarerContributor> contributors,
                                                     ParameterDeclarationContext declarationContext,
-                                                    ExtensionParameter parameterGroupOwner) {
+                                                    Optional<ExtensionParameter> parameterGroupOwner) {
     List<ParameterDeclarer> declarerList = new ArrayList<>();
     checkAnnotationsNotUsedMoreThanOnce(parameters, Connection.class, UseConfig.class, MetadataKeyId.class);
+
     for (ExtensionParameter extensionParameter : parameters) {
-      if (extensionParameter.shouldBeAdvertised()) {
-        ParameterDeclarer parameter =
-            extensionParameter.isRequired() ? component.withRequiredParameter(extensionParameter.getAlias())
-                : component.withOptionalParameter(extensionParameter.getAlias())
-                    .defaultingTo(extensionParameter.defaultValue().isPresent() ? extensionParameter.defaultValue().get() : null);
 
-        parameter.ofType(extensionParameter.getMetadataType(typeLoader)).describedAs(EMPTY);
-
-        parseParameterRole(extensionParameter, parameter);
-        parseExpressionSupport(extensionParameter, parameter);
-        parseNullSafe(extensionParameter, parameter);
-        addTypeRestrictions(extensionParameter, parameter);
-        parseLayout(extensionParameter, parameter);
-        addImplementingTypeModelProperty(extensionParameter, parameter);
-        parseXmlHints(extensionParameter, parameter);
-        contributors.forEach(contributor -> contributor.contribute(extensionParameter, parameter, declarationContext));
-        declarerList.add(parameter);
+      if (!extensionParameter.shouldBeAdvertised()) {
+        continue;
       }
 
-      if (extensionParameter.isAnnotatedWith(ParameterGroup.class)) {
-        final Type type = extensionParameter.getType();
-        final List<ExtensionParameter> annotatedParameters =
-            ImmutableList.<ExtensionParameter>builder().addAll(type.getAnnotatedFields(Parameter.class))
-                .addAll(type.getAnnotatedFields(ParameterGroup.class)).build();
-
-        // TODO: MULE-9220: Add a syntax validator for this
-        if (extensionParameter.isAnnotatedWith(org.mule.runtime.extension.api.annotation.param.Optional.class)) {
-          throw new IllegalParameterModelDefinitionException(format("@%s can not be applied along with @%s. Affected field [%s].",
-                                                                    org.mule.runtime.extension.api.annotation.param.Optional.class
-                                                                        .getSimpleName(),
-                                                                    ParameterGroup.class
-                                                                        .getSimpleName(),
-                                                                    extensionParameter.getName()));
-        }
-
-        if (!annotatedParameters.isEmpty()) {
-          if (extensionParameter.equals(parameterGroupOwner)) {
-            throw new IllegalParameterModelDefinitionException(
-                                                               format(
-                                                                      "@%s cannot be applied recursively within the same class but field '%s' was found inside class '%s'",
-                                                                      ParameterGroup.class
-                                                                          .getSimpleName(),
-                                                                      parameterGroupOwner.getName(),
-                                                                      parameterGroupOwner.getType().getName()));
-          } else {
-            declareParameters(component, annotatedParameters, contributors, declarationContext, extensionParameter);
-          }
-
-        } else {
-          declareParameters(component, getFieldsWithGetters(type.getDeclaringClass()).stream().map(FieldWrapper::new)
-              .collect(toList()), contributors, declarationContext, extensionParameter);
-        }
+      if (declaredAsGroup(component, contributors, declarationContext, extensionParameter)) {
+        continue;
       }
+
+      ParameterGroupDeclarer groupDeclarer = parameterGroupOwner
+          .map(owner -> owner.getAnnotation(ParameterGroup.class).orElse(null))
+          .filter(groupAnnotation -> groupAnnotation != null)
+          .map(groupAnnotation -> component.withParameterGroup(groupAnnotation.name()))
+          .orElseGet(() -> component.onDefaultParameterGroup());
+
+      ParameterDeclarer parameter =
+          extensionParameter.isRequired() ? groupDeclarer.withRequiredParameter(extensionParameter.getAlias())
+              : groupDeclarer.withOptionalParameter(extensionParameter.getAlias())
+              .defaultingTo(extensionParameter.defaultValue().isPresent() ? extensionParameter.defaultValue().get() : null);
+
+      parameter.ofType(extensionParameter.getMetadataType(typeLoader)).describedAs(EMPTY);
+
+      parseParameterRole(extensionParameter, parameter);
+      parseExpressionSupport(extensionParameter, parameter);
+      parseNullSafe(extensionParameter, parameter);
+      addTypeRestrictions(extensionParameter, parameter);
+      parseLayout(extensionParameter, parameter);
+      addImplementingTypeModelProperty(extensionParameter, parameter);
+      parseXmlHints(extensionParameter, parameter);
+      contributors.forEach(contributor -> contributor.contribute(extensionParameter, parameter, declarationContext));
+      declarerList.add(parameter);
     }
 
     return declarerList;
+  }
+
+  private boolean declaredAsGroup(ParameterizedDeclarer component,
+                                  List<ParameterDeclarerContributor> contributors,
+                                  ParameterDeclarationContext declarationContext,
+                                  ExtensionParameter extensionParameter) {
+
+    ParameterGroup groupAnnotation = extensionParameter.getAnnotation(ParameterGroup.class).orElse(null);
+    if (groupAnnotation == null) {
+      return false;
+    }
+
+    final Type type = extensionParameter.getType();
+
+    final List<FieldElement> nestedGroups = type.getAnnotatedFields(ParameterGroup.class);
+    if (!nestedGroups.isEmpty()) {
+      throw new IllegalParameterModelDefinitionException(format(
+          "Class '%s' is used as a @%s but contains fields which also hold that annotation. Nesting groups is not allowed. "
+              + "Offending fields are: [%s]",
+          type.getName(),
+          ParameterGroup.class.getSimpleName(),
+          nestedGroups.stream().map(FieldElement::getName).collect(joining(","))));
+    }
+
+    final List annotatedParameters = type.getAnnotatedFields(Parameter.class);
+
+    // TODO: MULE-9220: Add a syntax validator for this
+    if (extensionParameter.isAnnotatedWith(org.mule.runtime.extension.api.annotation.param.Optional.class)) {
+      throw new IllegalParameterModelDefinitionException(
+          format("@%s can not be applied alongside with @%s. Affected parameter is [%s].",
+                 org.mule.runtime.extension.api.annotation.param.Optional.class.getSimpleName(),
+                 ParameterGroup.class.getSimpleName(),
+                 extensionParameter.getName()));
+    }
+
+    if (!annotatedParameters.isEmpty()) {
+      declareParameters(component, annotatedParameters, contributors, declarationContext, ofNullable(extensionParameter));
+    } else {
+      declareParameters(component, getFieldsWithGetters(type.getDeclaringClass()).stream().map(FieldWrapper::new)
+          .collect(toList()), contributors, declarationContext, ofNullable(extensionParameter));
+    }
+
+    return true;
   }
 
   private void checkConfigurationIsNotAnOperation(Class<?> configurationType) {
@@ -573,8 +601,8 @@ public final class AnnotationsBasedDescriber implements Describer {
     for (Class<?> operationClass : operationClasses) {
       if (configurationType.isAssignableFrom(operationClass) || operationClass.isAssignableFrom(configurationType)) {
         throw new IllegalConfigurationModelDefinitionException(
-                                                               format("Configuration class '%s' cannot be the same class (nor a derivative) of any operation class '%s",
-                                                                      configurationType.getName(), operationClass.getName()));
+            format("Configuration class '%s' cannot be the same class (nor a derivative) of any operation class '%s",
+                   configurationType.getName(), operationClass.getName()));
       }
     }
   }
@@ -582,8 +610,8 @@ public final class AnnotationsBasedDescriber implements Describer {
   private void checkOperationIsNotAnExtension(Class<?> operationType) {
     if (operationType.isAssignableFrom(extensionType) || extensionType.isAssignableFrom(operationType)) {
       throw new IllegalOperationModelDefinitionException(
-                                                         format("Operation class '%s' cannot be the same class (nor a derivative) of the extension class '%s",
-                                                                operationType.getName(), extensionType.getName()));
+          format("Operation class '%s' cannot be the same class (nor a derivative) of the extension class '%s",
+                 operationType.getName(), extensionType.getName()));
     }
   }
 
@@ -618,18 +646,20 @@ public final class AnnotationsBasedDescriber implements Describer {
   private void parseNullSafe(ExtensionParameter extensionParameter, ParameterDeclarer parameter) {
     if (extensionParameter.isAnnotatedWith(NullSafe.class)) {
       if (extensionParameter.isRequired()) {
-        throw new IllegalParameterModelDefinitionException(format("Parameter '%s' is required but annotated with '@%s', which is redundant",
-                                                                  extensionParameter.getName(), NullSafe.class.getSimpleName()));
+        throw new IllegalParameterModelDefinitionException(
+            format("Parameter '%s' is required but annotated with '@%s', which is redundant",
+                   extensionParameter.getName(), NullSafe.class.getSimpleName()));
       }
 
       parameter.getDeclaration().getType().accept(new BasicTypeMetadataVisitor() {
 
         @Override
         protected void visitBasicType(MetadataType metadataType) {
-          throw new IllegalParameterModelDefinitionException(format("Parameter '%s' is annotated with '@%s' but is of type '%s'. That annotation can only be "
-              + "used with complex types (Pojos, Lists, Maps)",
-                                                                    extensionParameter.getName(), NullSafe.class.getSimpleName(),
-                                                                    extensionParameter.getType().getName()));
+          throw new IllegalParameterModelDefinitionException(
+              format("Parameter '%s' is annotated with '@%s' but is of type '%s'. That annotation can only be "
+                         + "used with complex types (Pojos, Lists, Maps)",
+                     extensionParameter.getName(), NullSafe.class.getSimpleName(),
+                     extensionParameter.getType().getName()));
         }
       });
 
@@ -643,11 +673,11 @@ public final class AnnotationsBasedDescriber implements Describer {
 
   private void parseXmlHints(ExtensionParameter extensionParameter, ParameterDeclarer parameter) {
     extensionParameter.getAnnotation(XmlHints.class).ifPresent(
-                                                               hints -> parameter.withDsl(ElementDslModel.builder()
-                                                                   .allowsInlineDefinition(hints.allowInlineDefinition())
-                                                                   .allowsReferences(hints.allowReferences())
-                                                                   .allowTopLevelDefinition(hints.allowTopLevelDefinition())
-                                                                   .build()));
+        hints -> parameter.withDsl(ElementDslModel.builder()
+                                       .allowsInlineDefinition(hints.allowInlineDefinition())
+                                       .allowsReferences(hints.allowReferences())
+                                       .allowTopLevelDefinition(hints.allowTopLevelDefinition())
+                                       .build()));
   }
 
   private void checkAnnotationsNotUsedMoreThanOnce(List<ExtensionParameter> parameters,
@@ -656,9 +686,9 @@ public final class AnnotationsBasedDescriber implements Describer {
       final long count = parameters.stream().filter(param -> param.isAnnotatedWith(annotation)).count();
       if (count > 1) {
         throw new IllegalModelDefinitionException(
-                                                  format("The defined parameters %s from %s, uses the annotation @%s more than once",
-                                                         parameters.stream().map(p -> p.getName()).collect(toList()),
-                                                         parameters.get(0).getOwnerDescription(), annotation.getSimpleName()));
+            format("The defined parameters %s from %s, uses the annotation @%s more than once",
+                   parameters.stream().map(p -> p.getName()).collect(toList()),
+                   parameters.get(0).getOwnerDescription(), annotation.getSimpleName()));
       }
     }
   }
@@ -672,9 +702,9 @@ public final class AnnotationsBasedDescriber implements Describer {
 
   private void addImplementingTypeModelProperty(ExtensionParameter extensionParameter, ParameterDeclarer parameter) {
     parameter.withModelProperty(extensionParameter.isFieldBased()
-        ? new DeclaringMemberModelProperty(((FieldElement) extensionParameter).getField())
-        : new ImplementingParameterModelProperty(
-                                                 ((ParameterElement) extensionParameter).getParameter()));
+                                    ? new DeclaringMemberModelProperty(((FieldElement) extensionParameter).getField())
+                                    : new ImplementingParameterModelProperty(
+        ((ParameterElement) extensionParameter).getParameter()));
   }
 
   private void addPagedOperationModelProperty(MethodElement operationMethod, OperationDeclarer operation,
@@ -682,9 +712,9 @@ public final class AnnotationsBasedDescriber implements Describer {
     if (PagingProvider.class.isAssignableFrom(operationMethod.getReturnType())) {
       if (!supportsConfig) {
         throw new IllegalOperationModelDefinitionException(format(
-                                                                  "Paged operation '%s' is defined at the extension level but it requires a config, since connections "
-                                                                      + "are required for paging",
-                                                                  operationMethod.getName()));
+            "Paged operation '%s' is defined at the extension level but it requires a config, since connections "
+                + "are required for paging",
+            operationMethod.getName()));
       }
       operation.withModelProperty(new PagedOperationModelProperty());
     }

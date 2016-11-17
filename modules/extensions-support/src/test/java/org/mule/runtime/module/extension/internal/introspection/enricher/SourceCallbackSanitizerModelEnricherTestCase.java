@@ -65,7 +65,7 @@ public class SourceCallbackSanitizerModelEnricherTestCase extends AbstractMuleTe
     when(describingContext.getExtensionDeclarer()).thenReturn(mock(ExtensionDeclarer.class));
     when(describingContext.getExtensionDeclarer().getDeclaration()).thenReturn(extensionDeclaration);
     when(extensionDeclaration.getMessageSources()).thenReturn(asList(sourceDeclaration));
-    when(sourceDeclaration.getParameters()).thenReturn(parameters);
+    when(sourceDeclaration.getAllParameters()).thenReturn(parameters);
 
     param1 = mockParameter("param1", true);
     param2 = mockParameter("param2", true);

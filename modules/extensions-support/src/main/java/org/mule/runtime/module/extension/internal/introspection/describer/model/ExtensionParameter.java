@@ -17,7 +17,6 @@ import org.mule.runtime.core.api.Event;
 import org.mule.runtime.core.api.message.InternalMessage;
 import org.mule.runtime.extension.api.annotation.param.Connection;
 import org.mule.runtime.extension.api.annotation.param.Optional;
-import org.mule.runtime.extension.api.annotation.param.ParameterGroup;
 import org.mule.runtime.extension.api.annotation.param.UseConfig;
 import org.mule.runtime.extension.api.runtime.source.SourceCallbackContext;
 
@@ -47,7 +46,7 @@ public interface ExtensionParameter extends WithType, WithAnnotations, NamedObje
    */
   default boolean shouldBeAdvertised() {
     return !(assignableFromAny(getType().getDeclaringClass(), IMPLICIT_ARGUMENT_TYPES)
-        || (isAnnotatedWith(UseConfig.class) || isAnnotatedWith(Connection.class)) || isAnnotatedWith(ParameterGroup.class));
+        || (isAnnotatedWith(UseConfig.class) || isAnnotatedWith(Connection.class)));
   }
 
   /**

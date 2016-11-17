@@ -10,6 +10,8 @@ import static org.junit.Assert.fail;
 import static org.mule.runtime.core.execution.TransactionalExecutionTemplate.createTransactionalExecutionTemplate;
 import static org.mule.tck.MuleTestUtils.processAsStreamAndBlock;
 import org.mule.functional.functional.FlowAssert;
+import org.mule.runtime.core.api.execution.ExecutionCallback;
+import org.mule.runtime.core.api.scheduler.Scheduler;
 import org.mule.runtime.core.exception.MessagingException;
 import org.mule.runtime.core.api.MuleContext;
 import org.mule.runtime.core.api.Event;
@@ -35,6 +37,7 @@ public class FlowRunner extends FlowConstructRunner<FlowRunner> {
 
   private Transformer responseEventTransformer = input -> input;
   private boolean nonBlocking = false;
+  private Scheduler asyncScheduler;
 
   /**
    * Initializes this flow runner.
@@ -45,6 +48,7 @@ public class FlowRunner extends FlowConstructRunner<FlowRunner> {
   public FlowRunner(MuleContext muleContext, String flowName) {
     super(muleContext);
     this.flowName = flowName;
+    asyncScheduler = muleContext.getSchedulerService().ioScheduler();
   }
 
   /**
@@ -113,18 +117,33 @@ public class FlowRunner extends FlowConstructRunner<FlowRunner> {
    */
   public Event runAndVerify(String... flowNamesToVerify) throws Exception {
     Flow flow = (Flow) getFlowConstruct();
-    Event responseEvent = txExecutionTemplate.execute(() -> {
+    Event request = getOrBuildEvent();
+    Event response = request;
+    ExecutionCallback callback = () -> {
       if (nonBlocking) {
-        return processAsStreamAndBlock(getOrBuildEvent(), flow);
+        return processAsStreamAndBlock(request, flow);
       } else {
-        return flow.process(getOrBuildEvent());
+        return flow.process(request);
       }
-    });
+    };
+
+    if (asynchronously) {
+      asyncScheduler.execute(() -> {
+        try {
+          txExecutionTemplate.execute(callback);
+        } catch (Exception e) {
+          // Ignore
+        }
+      });
+    } else {
+      response = txExecutionTemplate.execute(callback);
+    }
+
     for (String flowNameToVerify : flowNamesToVerify) {
       FlowAssert.verify(flowNameToVerify);
     }
 
-    return (Event) responseEventTransformer.transform(responseEvent);
+    return (Event) responseEventTransformer.transform(response);
   }
 
   /**

@@ -35,6 +35,7 @@ public abstract class FlowConstructRunner<R extends FlowConstructRunner> {
   protected MuleContext muleContext;
   protected TestEventBuilder eventBuilder = new TestEventBuilder();
   private Event requestEvent;
+  protected boolean asynchronously;
 
   /**
    * Prepares the given data to be sent as the payload of the {@link Event} to the configured flow.
@@ -216,14 +217,15 @@ public abstract class FlowConstructRunner<R extends FlowConstructRunner> {
   }
 
   /**
-   * Configures this runner to run this flow as one-way.
+   * Configures this runner to exectue the flow asynchronously so that the result or any exceptions are not propagated back to
+   * the test case.
    *
    * @return this {@link FlowRunner}
    * @deprecated MULE-10445 Mule 4 - New Threading model
    */
   @Deprecated
   public R asynchronously() {
-    eventBuilder.asynchronously();
+    this.asynchronously = true;
 
     return (R) this;
   }

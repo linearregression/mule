@@ -11,7 +11,6 @@ import org.mule.runtime.module.repository.api.BundleDescriptor;
 import org.mule.runtime.module.repository.api.BundleNotFoundException;
 import org.mule.runtime.module.repository.api.RepositoryConnectionException;
 import org.mule.runtime.module.repository.api.RepositoryService;
-import org.mule.runtime.module.repository.api.RepositoryServiceDisabledException;
 
 import java.io.File;
 import java.util.List;
@@ -24,6 +23,8 @@ import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.transfer.ArtifactNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Default implementation for {@code RepositoryService}.
@@ -31,6 +32,8 @@ import org.eclipse.aether.transfer.ArtifactNotFoundException;
  * @since 4.0
  */
 public class DefaultRepositoryService implements RepositoryService {
+
+  private static final Logger logger = LoggerFactory.getLogger(DefaultRepositoryService.class);
 
   private final RepositorySystem repositorySystem;
   private final DefaultRepositorySystemSession repositorySystemSession;
@@ -46,14 +49,16 @@ public class DefaultRepositoryService implements RepositoryService {
   @Override
   public File lookupBundle(BundleDescriptor bundleDescriptor) {
     try {
+      ArtifactRequest getArtifactRequest = new ArtifactRequest();
       if (remoteRepositories.isEmpty()) {
-        throw new RepositoryServiceDisabledException("Repository service has not been configured so it's disabled. "
-            + "To enable it you must configure the set of repositories to use using the system property: "
-            + MULE_REMOTE_REPOSITORIES_PROPERTY);
+        logger.warn(
+                    "Repository service has not been configured with remote repositories, therefore bundle resolution will work offline. "
+                        + "In order to enabling accessing remote repositories for downloading missing bundles the set of repositories to use should set by using the system property: "
+                        + MULE_REMOTE_REPOSITORIES_PROPERTY);
+      } else {
+        getArtifactRequest.setRepositories(remoteRepositories);
       }
       DefaultArtifact artifact = toArtifact(bundleDescriptor);
-      ArtifactRequest getArtifactRequest = new ArtifactRequest();
-      getArtifactRequest.setRepositories(remoteRepositories);
       getArtifactRequest.setArtifact(artifact);
       ArtifactResult artifactResult = repositorySystem.resolveArtifact(repositorySystemSession, getArtifactRequest);
       return artifactResult.getArtifact().getFile();

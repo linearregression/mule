@@ -38,7 +38,7 @@ public class RepositoryServiceFactory {
   private static final String REPOSITORY_FOLDER = "repository";
   private static final String DEFAULT_REPOSITORY_TYPE = "default";
 
-  private static final Logger logger = LoggerFactory.getLogger(DefaultRepositoryService.class);
+  private static final Logger logger = LoggerFactory.getLogger(RepositoryServiceFactory.class);
 
   public RepositoryService createRepositoryService() {
     RepositorySystem repositorySystem = new SpiRepositorySystemFactory().createRepositorySystem();

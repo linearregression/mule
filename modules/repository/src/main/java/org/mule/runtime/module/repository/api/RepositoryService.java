@@ -29,7 +29,6 @@ public interface RepositoryService {
    * @return a {@code File} where the bundle is stored in the local repository
    * @throws BundleNotFoundException when the bundle could not be located in any of the configured repositories.
    * @throws RepositoryConnectionException when there was a problem connecting to one of the external repositories.
-   * @throws RepositoryServiceDisabledException when the repository service has not been properly configured.
    */
   File lookupBundle(BundleDescriptor bundleDescriptor);
 

@@ -21,7 +21,6 @@ import org.mule.runtime.extension.api.annotation.param.UseConfig;
 import org.mule.runtime.extension.api.runtime.operation.ExecutionContext;
 import org.mule.runtime.extension.api.runtime.operation.ParameterResolver;
 import org.mule.runtime.extension.api.runtime.source.SourceCallbackContext;
-import org.mule.runtime.module.extension.internal.introspection.ParameterGroup;
 import org.mule.runtime.module.extension.internal.model.property.ParameterGroupModelProperty;
 import org.mule.runtime.module.extension.internal.runtime.resolver.ArgumentResolver;
 import org.mule.runtime.module.extension.internal.runtime.resolver.ByParameterNameArgumentResolver;
@@ -40,7 +39,6 @@ import java.lang.reflect.Parameter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 
 /**
@@ -179,14 +177,10 @@ public final class MethodArgumentResolverDelegate implements ArgumentResolverDel
    * @return mapping between the {@link Method}'s arguments which are parameters groups and their respective resolvers
    */
   private Map<Parameter, ParameterGroupArgumentResolver<? extends Object>> getParameterGroupResolvers(ComponentModel model) {
-    Optional<ParameterGroupModelProperty> parameterGroupModelProperty = model.getModelProperty(ParameterGroupModelProperty.class);
     Map<Parameter, ParameterGroupArgumentResolver<? extends Object>> resolverMap = new HashMap<>();
-
-    if (parameterGroupModelProperty.isPresent()) {
-      for (ParameterGroup<Parameter> group : parameterGroupModelProperty.get().getGroups()) {
-        resolverMap.put(group.getContainer(), new ParameterGroupArgumentResolver<>(group));
-      }
-    }
+    model.getParameterGroupModels().forEach(group -> group.getModelProperty(ParameterGroupModelProperty.class)
+        .ifPresent(
+            property -> resolverMap.put((Parameter) property.getContainer(), new ParameterGroupArgumentResolver<>(property))));
 
     return resolverMap;
   }

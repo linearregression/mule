@@ -17,7 +17,7 @@ import org.mule.runtime.api.meta.model.operation.OperationModel;
 import org.mule.runtime.api.meta.model.parameter.ParameterModel;
 import org.mule.runtime.extension.api.annotation.param.Parameter;
 import org.mule.runtime.extension.api.exception.IllegalParameterModelDefinitionException;
-import org.mule.runtime.module.extension.internal.introspection.ParameterGroup;
+import org.mule.runtime.module.extension.internal.introspection.ParameterGroupDescriptor;
 import org.mule.runtime.module.extension.internal.model.property.ParameterGroupModelProperty;
 import org.mule.tck.junit4.AbstractMuleTestCase;
 import org.mule.tck.size.SmallTest;
@@ -151,9 +151,9 @@ public class ParameterModelValidatorTestCase extends AbstractMuleTestCase {
   @Test(expected = IllegalParameterModelDefinitionException.class)
   public void invalidModelDueToNonInstantiableParameterGroup() {
     final String nonInstantiableField = "nonInstantiableField";
-    ParameterGroup child =
-        new ParameterGroup(Serializable.class, getField(InvalidPojoParameterGroup.class, nonInstantiableField).get(),
-                           nonInstantiableField);
+    ParameterGroupDescriptor child =
+        new ParameterGroupDescriptor(Serializable.class, getField(InvalidPojoParameterGroup.class, nonInstantiableField).get(),
+                                     nonInstantiableField);
     when(invalidParameterModel.getModelProperty(ParameterGroupModelProperty.class))
         .thenReturn(Optional.of(new ParameterGroupModelProperty(asList(child))));
     when(invalidParameterModel.getType()).thenReturn(toMetadataType(Serializable.class));

@@ -9,6 +9,7 @@ package org.mule.runtime.module.extension.internal.runtime.objectbuilder;
 import static org.mule.runtime.module.extension.internal.util.IntrospectionUtils.getField;
 import org.mule.runtime.api.exception.MuleException;
 import org.mule.runtime.api.meta.model.EnrichableModel;
+import org.mule.runtime.api.meta.model.parameter.ParameterizedModel;
 import org.mule.runtime.core.api.Event;
 import org.mule.runtime.core.util.collection.ImmutableListCollector;
 import org.mule.runtime.module.extension.internal.model.property.ParameterGroupModelProperty;
@@ -34,15 +35,10 @@ public abstract class ResolverSetBasedObjectBuilder<T> implements ObjectBuilder<
   private final List<ValueSetter> singleValueSetters;
   private final List<ValueSetter> groupValueSetters;
 
-  public ResolverSetBasedObjectBuilder(Class<?> prototypeClass, EnrichableModel model, ResolverSet resolverSet) {
-    this(prototypeClass, model.getModelProperty(ParameterGroupModelProperty.class), resolverSet);
-  }
-
-  public ResolverSetBasedObjectBuilder(Class<?> prototypeClass, Optional<ParameterGroupModelProperty> groupModelProperty,
-                                       ResolverSet resolverSet) {
+  public ResolverSetBasedObjectBuilder(Class<?> prototypeClass, ParameterizedModel model, ResolverSet resolverSet) {
     this.resolverSet = resolverSet;
     singleValueSetters = createSingleValueSetters(prototypeClass, resolverSet);
-    groupValueSetters = GroupValueSetter.settersFor(groupModelProperty);
+    groupValueSetters = GroupValueSetter.settersFor(model);
   }
 
   /**

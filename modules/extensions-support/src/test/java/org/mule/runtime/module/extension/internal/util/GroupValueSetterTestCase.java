@@ -11,7 +11,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import org.mule.runtime.module.extension.internal.introspection.ParameterGroup;
+import org.mule.runtime.module.extension.internal.introspection.ParameterGroupDescriptor;
 import org.mule.runtime.module.extension.internal.model.property.ParameterGroupModelProperty;
 import org.mule.runtime.module.extension.internal.runtime.resolver.ResolverSetResult;
 import org.mule.tck.junit4.AbstractMuleTestCase;
@@ -46,14 +46,14 @@ public class GroupValueSetterTestCase extends AbstractMuleTestCase {
   @Before
   public void before() throws Exception {
     final String personalInfo = "personalInfo";
-    ParameterGroup group =
-        new ParameterGroup(ExtendedPersonalInfo.class, getField(HeisenbergExtension.class, personalInfo).get(), personalInfo);
+    ParameterGroupDescriptor group =
+        new ParameterGroupDescriptor(ExtendedPersonalInfo.class, getField(HeisenbergExtension.class, personalInfo).get(), personalInfo);
     group.addParameter(getField(ExtendedPersonalInfo.class, "name").get());
     group.addParameter(getField(ExtendedPersonalInfo.class, "age").get());
 
     final String lifetimeInfo = "lifetimeInfo";
-    ParameterGroup child =
-        new ParameterGroup(LifetimeInfo.class, getField(ExtendedPersonalInfo.class, lifetimeInfo).get(), lifetimeInfo);
+    ParameterGroupDescriptor child =
+        new ParameterGroupDescriptor(LifetimeInfo.class, getField(ExtendedPersonalInfo.class, lifetimeInfo).get(), lifetimeInfo);
     child.addParameter(getField(LifetimeInfo.class, "dateOfBirth").get());
     group.addModelProperty(new ParameterGroupModelProperty(asList(child)));
 

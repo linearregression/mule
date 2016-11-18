@@ -11,7 +11,6 @@ import static java.util.Optional.empty;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
-import static org.apache.commons.lang.StringUtils.EMPTY;
 import static org.mule.runtime.api.meta.ExpressionSupport.NOT_SUPPORTED;
 import static org.mule.runtime.api.meta.model.connection.ConnectionManagementType.CACHED;
 import static org.mule.runtime.api.meta.model.connection.ConnectionManagementType.NONE;
@@ -83,6 +82,7 @@ import org.mule.runtime.extension.api.model.property.PagedOperationModelProperty
 import org.mule.runtime.extension.api.runtime.operation.InterceptingCallback;
 import org.mule.runtime.extension.api.runtime.streaming.PagingProvider;
 import org.mule.runtime.module.extension.internal.introspection.BasicTypeMetadataVisitor;
+import org.mule.runtime.module.extension.internal.introspection.ParameterGroupDescriptor;
 import org.mule.runtime.module.extension.internal.introspection.describer.contributor.FunctionParameterTypeContributor;
 import org.mule.runtime.module.extension.internal.introspection.describer.contributor.InfrastructureFieldContributor;
 import org.mule.runtime.module.extension.internal.introspection.describer.contributor.ParameterDeclarerContributor;
@@ -96,7 +96,6 @@ import org.mule.runtime.module.extension.internal.introspection.describer.model.
 import org.mule.runtime.module.extension.internal.introspection.describer.model.FieldElement;
 import org.mule.runtime.module.extension.internal.introspection.describer.model.MethodElement;
 import org.mule.runtime.module.extension.internal.introspection.describer.model.OperationContainerElement;
-import org.mule.runtime.module.extension.internal.introspection.describer.model.ParameterElement;
 import org.mule.runtime.module.extension.internal.introspection.describer.model.SourceElement;
 import org.mule.runtime.module.extension.internal.introspection.describer.model.Type;
 import org.mule.runtime.module.extension.internal.introspection.describer.model.WithAnnotations;
@@ -121,6 +120,7 @@ import org.mule.runtime.module.extension.internal.model.property.ImplementingTyp
 import org.mule.runtime.module.extension.internal.model.property.InterceptingModelProperty;
 import org.mule.runtime.module.extension.internal.model.property.NullSafeModelProperty;
 import org.mule.runtime.module.extension.internal.model.property.OperationExecutorModelProperty;
+import org.mule.runtime.module.extension.internal.model.property.ParameterGroupModelProperty;
 import org.mule.runtime.module.extension.internal.model.property.SourceCallbackModelProperty;
 import org.mule.runtime.module.extension.internal.model.property.SourceFactoryModelProperty;
 import org.mule.runtime.module.extension.internal.model.property.TypeRestrictionModelProperty;
@@ -130,6 +130,8 @@ import org.mule.runtime.module.extension.internal.runtime.source.DefaultSourceFa
 import com.google.common.collect.ImmutableList;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedElement;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -512,7 +514,7 @@ public final class AnnotationsBasedDescriber implements Describer {
                                                     List<ExtensionParameter> parameters,
                                                     List<ParameterDeclarerContributor> contributors,
                                                     ParameterDeclarationContext declarationContext,
-                                                    Optional<ExtensionParameter> parameterGroupOwner) {
+                                                    Optional<ParameterGroupDeclarer> parameterGroupDeclarer) {
     List<ParameterDeclarer> declarerList = new ArrayList<>();
     checkAnnotationsNotUsedMoreThanOnce(parameters, Connection.class, UseConfig.class, MetadataKeyId.class);
 
@@ -526,19 +528,17 @@ public final class AnnotationsBasedDescriber implements Describer {
         continue;
       }
 
-      ParameterGroupDeclarer groupDeclarer = parameterGroupOwner
-          .map(owner -> owner.getAnnotation(ParameterGroup.class).orElse(null))
-          .filter(groupAnnotation -> groupAnnotation != null)
-          .map(groupAnnotation -> component.withParameterGroup(groupAnnotation.name()))
-          .orElseGet(() -> component.onDefaultParameterGroup());
+      ParameterGroupDeclarer groupDeclarer = parameterGroupDeclarer.orElseGet(component::onDefaultParameterGroup);
 
-      ParameterDeclarer parameter =
-          extensionParameter.isRequired() ? groupDeclarer.withRequiredParameter(extensionParameter.getAlias())
-              : groupDeclarer.withOptionalParameter(extensionParameter.getAlias())
-              .defaultingTo(extensionParameter.defaultValue().isPresent() ? extensionParameter.defaultValue().get() : null);
+      ParameterDeclarer parameter;
+      if (extensionParameter.isRequired()) {
+        parameter = groupDeclarer.withRequiredParameter(extensionParameter.getAlias());
+      } else {
+        parameter = groupDeclarer.withOptionalParameter(extensionParameter.getAlias())
+            .defaultingTo(extensionParameter.defaultValue().isPresent() ? extensionParameter.defaultValue().get() : null);
+      }
 
-      parameter.ofType(extensionParameter.getMetadataType(typeLoader)).describedAs(EMPTY);
-
+      parameter.ofType(extensionParameter.getMetadataType(typeLoader)).describedAs(extensionParameter.getDescription());
       parseParameterRole(extensionParameter, parameter);
       parseExpressionSupport(extensionParameter, parameter);
       parseNullSafe(extensionParameter, parameter);
@@ -556,14 +556,14 @@ public final class AnnotationsBasedDescriber implements Describer {
   private boolean declaredAsGroup(ParameterizedDeclarer component,
                                   List<ParameterDeclarerContributor> contributors,
                                   ParameterDeclarationContext declarationContext,
-                                  ExtensionParameter extensionParameter) {
+                                  ExtensionParameter groupParameter) {
 
-    ParameterGroup groupAnnotation = extensionParameter.getAnnotation(ParameterGroup.class).orElse(null);
+    ParameterGroup groupAnnotation = groupParameter.getAnnotation(ParameterGroup.class).orElse(null);
     if (groupAnnotation == null) {
       return false;
     }
 
-    final Type type = extensionParameter.getType();
+    final Type type = groupParameter.getType();
 
     final List<FieldElement> nestedGroups = type.getAnnotatedFields(ParameterGroup.class);
     if (!nestedGroups.isEmpty()) {
@@ -578,19 +578,24 @@ public final class AnnotationsBasedDescriber implements Describer {
     final List annotatedParameters = type.getAnnotatedFields(Parameter.class);
 
     // TODO: MULE-9220: Add a syntax validator for this
-    if (extensionParameter.isAnnotatedWith(org.mule.runtime.extension.api.annotation.param.Optional.class)) {
+    if (groupParameter.isAnnotatedWith(org.mule.runtime.extension.api.annotation.param.Optional.class)) {
       throw new IllegalParameterModelDefinitionException(
           format("@%s can not be applied alongside with @%s. Affected parameter is [%s].",
                  org.mule.runtime.extension.api.annotation.param.Optional.class.getSimpleName(),
                  ParameterGroup.class.getSimpleName(),
-                 extensionParameter.getName()));
+                 groupParameter.getName()));
+    }
+
+    ParameterGroupDeclarer declarer = component.withParameterGroup(groupAnnotation.name());
+    if (!declarer.getDeclaration().getModelProperty(ParameterGroupModelProperty.class).isPresent()) {
+      declarer.withModelProperty(new ParameterGroupModelProperty(new ParameterGroupDescriptor(type, groupParameter.getDeclaringElement())));
     }
 
     if (!annotatedParameters.isEmpty()) {
-      declareParameters(component, annotatedParameters, contributors, declarationContext, ofNullable(extensionParameter));
+      declareParameters(component, annotatedParameters, contributors, declarationContext, ofNullable(declarer));
     } else {
       declareParameters(component, getFieldsWithGetters(type.getDeclaringClass()).stream().map(FieldWrapper::new)
-          .collect(toList()), contributors, declarationContext, ofNullable(extensionParameter));
+          .collect(toList()), contributors, declarationContext, ofNullable(declarer));
     }
 
     return true;
@@ -701,10 +706,10 @@ public final class AnnotationsBasedDescriber implements Describer {
   }
 
   private void addImplementingTypeModelProperty(ExtensionParameter extensionParameter, ParameterDeclarer parameter) {
-    parameter.withModelProperty(extensionParameter.isFieldBased()
-                                    ? new DeclaringMemberModelProperty(((FieldElement) extensionParameter).getField())
-                                    : new ImplementingParameterModelProperty(
-        ((ParameterElement) extensionParameter).getParameter()));
+    AnnotatedElement element = extensionParameter.getDeclaringElement();
+    parameter.withModelProperty(element instanceof Field
+                                    ? new DeclaringMemberModelProperty(((Field) element))
+                                    : new ImplementingParameterModelProperty((java.lang.reflect.Parameter) element));
   }
 
   private void addPagedOperationModelProperty(MethodElement operationMethod, OperationDeclarer operation,

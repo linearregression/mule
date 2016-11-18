@@ -100,7 +100,7 @@ public class MetadataMediator {
   public MetadataResult<ComponentMetadataDescriptor> getMetadata(MetadataContext context, MetadataKey key) {
     try {
       Object resolvedKey = keyIdObjectResolver.resolve(key);
-      return getMetadata(context, (p) -> resolvedKey);
+      return getMetadata(context, p -> resolvedKey);
     } catch (MetadataResolvingException e) {
       return failure(e, e.getFailure());
     }

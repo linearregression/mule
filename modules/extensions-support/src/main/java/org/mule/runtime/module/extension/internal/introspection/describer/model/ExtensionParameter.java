@@ -22,7 +22,7 @@ import org.mule.runtime.extension.api.runtime.source.SourceCallbackContext;
 
 import com.google.common.collect.ImmutableSet;
 
-import java.lang.reflect.Field;
+import java.lang.reflect.AnnotatedElement;
 import java.util.Set;
 
 /**
@@ -73,7 +73,7 @@ public interface ExtensionParameter extends WithType, WithAnnotations, NamedObje
   }
 
   /**
-   * @return A {@code boolean} indicating whether the parameter is based as a {@link Field}
+   * @return The {@link AnnotatedElement} form which {@code this} instance was derived
    */
-  boolean isFieldBased();
+  AnnotatedElement getDeclaringElement();
 }

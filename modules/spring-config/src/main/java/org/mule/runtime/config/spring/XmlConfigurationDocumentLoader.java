@@ -12,6 +12,8 @@ import org.mule.runtime.api.exception.MuleRuntimeException;
 import org.mule.runtime.config.spring.dsl.model.extension.loader.ModuleExtensionStore;
 
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import org.slf4j.Logger;
@@ -49,10 +51,12 @@ public class XmlConfigurationDocumentLoader {
 
   public Document loadDocument(Optional<ModuleExtensionStore> moduleExtensionStore, InputStream inputStream) {
     try {
+      final MuleLoggerErrorHandler errorHandler = new MuleLoggerErrorHandler();
       Document document = new MuleDocumentLoader()
           .loadDocument(new InputSource(inputStream),
-                        new ModuleDelegatingEntityResolver(moduleExtensionStore), new MuleLoggerErrorHandler(),
+                        new ModuleDelegatingEntityResolver(moduleExtensionStore), errorHandler,
                         VALIDATION_XSD, true);
+      errorHandler.throwExceptionIfErrorsWereFound();
       return document;
     } catch (Exception e) {
       throw new MuleRuntimeException(e);
@@ -64,11 +68,44 @@ public class XmlConfigurationDocumentLoader {
    */
   private static class MuleLoggerErrorHandler extends DefaultHandler {
 
+    List<String> errors = new ArrayList<>();
+
+    @Override
+    public void fatalError(SAXParseException e) throws SAXException {
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug(format("Found a fatal exception parsing document, message '%s'", e.toString()), e);
+        if (hasErrors()) {
+          LOGGER.debug(getErrors());
+        }
+      }
+      throw e;
+    }
+
     @Override
     public void error(SAXParseException e) throws SAXException {
+      final String errorMessage = e.toString();
       if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug(format("Found exception parsing document, message '%s'", e.toString()), e);
+        LOGGER.debug(format("Found exception parsing document, message '%s'", errorMessage), e);
+      }
+      errors.add(errorMessage);
+    }
+
+    public boolean hasErrors() {
+      return !errors.isEmpty();
+    }
+
+    public String getErrors() {
+      final StringBuilder sb =
+          new StringBuilder(format("There are '%s' errors while parsing the file, full list:", errors.size()));
+      errors.stream().forEach(error -> sb.append(error).append("\n"));
+      return sb.toString();
+    }
+
+    public void throwExceptionIfErrorsWereFound() {
+      if (hasErrors()) {
+        throw new IllegalArgumentException(getErrors());
       }
     }
+
   }
 }

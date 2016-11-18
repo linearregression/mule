@@ -7,7 +7,9 @@
 package org.mule.runtime.config.spring;
 
 import static java.lang.String.format;
+import static java.lang.System.lineSeparator;
 import static java.util.Optional.empty;
+import static org.mule.runtime.api.i18n.I18nMessageFactory.createStaticMessage;
 import org.mule.runtime.api.exception.MuleRuntimeException;
 import org.mule.runtime.config.spring.dsl.model.extension.loader.ModuleExtensionStore;
 
@@ -42,38 +44,57 @@ public class XmlConfigurationDocumentLoader {
    * Creates a {@link Document} from an {@link InputStream} with the required configuration
    * of a mule configuration file parsing.
    *
+   * @param filename //TODO(Fernandezlautaro) add javadoc
    * @param inputStream the input stream with the XML configuration content.
    * @return a new {@link Document} object with the provided content.
    */
-  public Document loadDocument(InputStream inputStream) {
-    return loadDocument(empty(), inputStream);
+  public Document loadDocument(String filename, InputStream inputStream) {
+    return loadDocument(empty(), filename, inputStream);
   }
 
-  public Document loadDocument(Optional<ModuleExtensionStore> moduleExtensionStore, InputStream inputStream) {
+  //TODO(Fernandezlautaro) add javadoc
+  public Document loadDocument(Optional<ModuleExtensionStore> moduleExtensionStore, String filename, InputStream inputStream) {
+    final MuleLoggerErrorHandler errorHandler = new MuleLoggerErrorHandler(filename);
+    Document document;
     try {
-      final MuleLoggerErrorHandler errorHandler = new MuleLoggerErrorHandler();
-      Document document = new MuleDocumentLoader()
+      document = new MuleDocumentLoader()
           .loadDocument(new InputSource(inputStream),
                         new ModuleDelegatingEntityResolver(moduleExtensionStore), errorHandler,
                         VALIDATION_XSD, true);
-      errorHandler.throwExceptionIfErrorsWereFound();
-      return document;
     } catch (Exception e) {
       throw new MuleRuntimeException(e);
     }
+    if (errorHandler.hasErrors()) {
+      throw new MuleRuntimeException(createStaticMessage(errorHandler.getErrors()));
+    }
+    return document;
   }
 
   /**
    * helper class to gather all errors while applying the found XSDs for the current input stream
+   * //TODO(Fernandezlautaro) add javadoc
    */
   private static class MuleLoggerErrorHandler extends DefaultHandler {
 
+    private final String filename;
     List<String> errors = new ArrayList<>();
+
+    //TODO(Fernandezlautaro) add javadoc
+    MuleLoggerErrorHandler(String filename) {
+      this.filename = filename;
+    }
+
+    @Override
+    public void warning(SAXParseException e) throws SAXException {
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug(format("Found a waring exception parsing document, message '%s'", e.toString()), e);
+      }
+    }
 
     @Override
     public void fatalError(SAXParseException e) throws SAXException {
       if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug(format("Found a fatal exception parsing document, message '%s'", e.toString()), e);
+        LOGGER.debug(format("Found a fatal error exception parsing document, message '%s'", e.toString()), e);
         if (hasErrors()) {
           LOGGER.debug(getErrors());
         }
@@ -85,27 +106,25 @@ public class XmlConfigurationDocumentLoader {
     public void error(SAXParseException e) throws SAXException {
       final String errorMessage = e.toString();
       if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug(format("Found exception parsing document, message '%s'", errorMessage), e);
+        LOGGER.debug(format("Found error exception parsing document, message '%s'", errorMessage), e);
       }
       errors.add(errorMessage);
     }
 
-    public boolean hasErrors() {
-      return !errors.isEmpty();
-    }
-
-    public String getErrors() {
+    //TODO(Fernandezlautaro) add javadoc
+    private String getErrors() {
+      final String subMessage = format(errors.size() == 1 ? "was '%s' error" : "were '%s' errors", errors.size());
       final StringBuilder sb =
-          new StringBuilder(format("There are '%s' errors while parsing the file, full list:", errors.size()));
-      errors.stream().forEach(error -> sb.append(error).append("\n"));
+          new StringBuilder(format("There %s while parsing the file '%s'.", subMessage, filename));
+      sb.append(lineSeparator()).append("Full list:");
+      errors.stream().forEach(error -> sb.append(lineSeparator()).append(error));
+      sb.append(lineSeparator());
       return sb.toString();
     }
 
-    public void throwExceptionIfErrorsWereFound() {
-      if (hasErrors()) {
-        throw new IllegalArgumentException(getErrors());
-      }
+    //TODO(Fernandezlautaro) add javadoc
+    private boolean hasErrors() {
+      return !errors.isEmpty();
     }
-
   }
 }

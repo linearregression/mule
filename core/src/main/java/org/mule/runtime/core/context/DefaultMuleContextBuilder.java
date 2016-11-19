@@ -296,7 +296,7 @@ public class DefaultMuleContextBuilder implements MuleContextBuilder {
   protected MuleWorkManager createWorkManager() {
     final MuleConfiguration config = getMuleConfiguration();
     // still can be embedded, but in container mode, e.g. in a WAR
-    final String threadPrefix = config.isContainerMode() ? String.format("[%s].Mule", config.getId()) : "MuleServer";
+    final String threadPrefix = config.isContainerMode() ? String.format("[%s].Mule", config.getId()) : "MuleContainer";
     ImmutableThreadingProfile threadingProfile = createMuleWorkManager();
     return new MuleWorkManager(threadingProfile, threadPrefix, config.getShutdownTimeout());
   }

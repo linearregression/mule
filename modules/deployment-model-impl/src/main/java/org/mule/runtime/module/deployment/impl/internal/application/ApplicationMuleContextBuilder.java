@@ -7,10 +7,10 @@
 package org.mule.runtime.module.deployment.impl.internal.application;
 
 import static org.mule.runtime.core.config.bootstrap.ArtifactType.APP;
+import org.mule.runtime.config.builders.PropertiesMuleConfigurationFactory;
 import org.mule.runtime.core.DefaultMuleContext;
 import org.mule.runtime.core.api.config.ThreadingProfile;
 import org.mule.runtime.core.config.DefaultMuleConfiguration;
-import org.mule.runtime.core.config.PropertiesMuleConfigurationFactory;
 import org.mule.runtime.core.context.DefaultMuleContextBuilder;
 import org.mule.runtime.core.util.StringUtils;
 import org.mule.runtime.core.work.MuleWorkManager;
